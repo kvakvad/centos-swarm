@@ -1,0 +1,10 @@
+version: '3.3'
+services:
+  svc1:
+    image: 'alpine'
+    command: sh -c 'tail -f /dev/null'
+    deploy:
+      mode: 'global'
+      placement:
+        constraints: 
+          - engine.labels.app_role == es-node

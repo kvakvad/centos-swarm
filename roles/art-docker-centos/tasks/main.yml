@@ -1,0 +1,45 @@
+---
+#- name: Docker | Storage Driver
+#  include: "storage_drivers/{{ docker_storage_driver }}.yml"
+#  when: docker_storage_driver is defined
+
+- name: Docker | Install yum-utils
+  yum: name=yum-utils
+
+- name: Docker | Deploy repository
+  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  args:
+    creates: /etc/yum.repos.d/docker-ce.repo
+
+- name: Docker | Enable edge repository
+  yum_repository:
+    name: docker-ce-edge
+    description: "Docker CE Edge - $basearch"
+    baseurl: "https://download.docker.com/linux/centos/7/$basearch/edge"
+    gpgcheck: yes
+    gpgkey: https://download.docker.com/linux/centos/gpg
+    enabled: yes
+    file: docker-ce
+    update_cache: yes
+  when: docker_channel == "edge"
+  notify: Docker | Upgrade to Edge
+
+- name: Docker | Install Docker Application
+  yum: name=docker-ce state=present
+  notify:
+    - Docker | Restart Docker
+
+- name: Docker | Deploy Config
+  import_tasks: deploy_config.yml
+
+- name: Docker | Ensure service started
+  service: name=docker state=started enabled=yes
+
+- name: Docker | Add specific users to "docker" group
+  user:
+    name: "{{ item }}"
+    groups: "docker"
+    append: True
+  with_items: "{{ docker_users }}"
+  when: docker_users
+

@@ -1,0 +1,84 @@
+---
+#  - name: Check for fw_zone
+#    command: firewall-cmd --get-zones
+#    register: fw_zones
+#    changed_when: false
+#    become: yes
+# 
+#  - name: Create fw_zone
+#    command: "firewall-cmd --permanent --new-zone={{fw_zone_name}}"
+#    become: yes
+#    when: "fw_zone_name not in fw_zones.stdout.split(' ')"
+#
+#  - name: Restart firewalld after fw_zone creation
+#    systemd:
+#      name: firewalld
+#      enabled: yes
+#      state: restarted
+#    become: yes
+#    when: "fw_zone_name not in fw_zones.stdout.split(' ')"
+#
+#  - name: Bind host_interface to fw_zone
+#    command: "firewall-cmd --permanent --zone={{fw_zone_name}} --change-interface={{host_interface_name}}"
+#    when: fw_zone_interface_1_to_1|bool
+#    become: yes
+
+  - name: Get fw_zone_name
+    command: "firewall-cmd --get-zone-of-interface={{host_interface_name}}"
+    register: fw_zone_name_reg
+    changed_when: false
+    become: yes
+  - set_fact: {fw_zone_name: "{{ fw_zone_name_reg.stdout }}"}
+
+#  - name: Add FW rule - Docker daemon (TLS) 2376/tcp
+#    firewalld:
+#      zone: "{{fw_zone_name}}"
+#      port: 2376/tcp
+#      permanent: true
+#      state: enabled
+#    become: yes
+#    when: config_tls
+
+  - name: Add FW rule - Docker Swarm cluster management 2377/tcp
+    firewalld:
+      zone: "{{fw_zone_name}}"
+      port: 2377/tcp
+      permanent: true
+      state: enabled
+    become: yes
+
+  - name: Add FW rule - Docker Swarm node communications 7946/tcp
+    firewalld:
+      zone: "{{fw_zone_name}}"
+      port: 7946/tcp
+      permanent: true
+      state: enabled
+    become: yes
+
+  - name: Add FW rule - Docker Swarm node communications 7946/udp
+    firewalld:
+      zone: "{{fw_zone_name}}"
+      port: 7946/udp
+      permanent: true
+      state: enabled
+    become: yes
+
+  - name: Add FW rule - Docker Swarm overlay network traffic 4789/udp
+    firewalld:
+      zone: "{{fw_zone_name}}"
+      port: 4789/udp
+      permanent: true
+      state: enabled
+    become: yes
+
+#  - name: Add FW rule - Docker Swarm overlay traffic encryption
+#    shell: firewall-cmd --permanent --zone={{fw_zone_name}} --add-rich-rule="rule protocol value=esp accept"
+#    become: yes
+#    ignore_errors: yes
+
+  - name: Restart firewalld
+    systemd:
+      name: firewalld
+      enabled: yes
+      state: restarted
+    become: yes

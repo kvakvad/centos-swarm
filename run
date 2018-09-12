@@ -1,0 +1,2 @@
+#!/bin/bash
+ansible-playbook centos-swarm.yml -i hosts.ini --become -K
